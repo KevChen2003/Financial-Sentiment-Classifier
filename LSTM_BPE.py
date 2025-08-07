@@ -44,22 +44,23 @@ df['label'] = df['label'].map(label_map)
 # check class balance
 print(df['label'].value_counts())
 
-# 1. Initialize a BPE tokenizer model (empty vocab)
+# initialize a BPE tokenizer model (empty vocab)
 tokenizer = Tokenizer(models.BPE())
 
-# 2. Add a pre-tokenizer to split text into words (or punctuation)
+# add a pre-tokenizer to split text into words (or punctuation)
 tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()
 
-# 3. Set up a trainer — define vocab size, special tokens
+# set up a trainer — define vocab size, special tokens
 trainer = trainers.BpeTrainer(vocab_size=10000, special_tokens=["<unk>", "<pad>"])
 
-# Save just the text column to a UTF-8 file for tokenizer training
+# save just the text column to a UTF-8 file for tokenizer training
 utf8_corpus_path = 'corpus_utf8.txt'
 df['text'].to_csv(utf8_corpus_path, index=False, header=False, encoding='utf-8')
 
-# 4. Train tokenizer on your dataset (list of text files or lines)
+# train tokenizer on dataset
 tokenizer.train([utf8_corpus_path], trainer)
 
+# convert sentences from raw text to token IDs (integer values), for model training later
 encoded_lines = [tokenizer.encode(t).ids for t in df['text']]
 
 # Pad sequences to uniform length
@@ -71,44 +72,23 @@ y = np.array(df['label'])
 # Train/test split of 80/20 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# load glove vectors into a dictionary
-embedding_index = {}
-with open("glove.42B.300d.txt", encoding="utf8") as f: 
-    for line in f:
-        values = line.split()
-        word = values[0]
-        coefs = np.asarray(values[1:], dtype='float32')
-        embedding_index[word] = coefs
-
 # Model parameters
 # vocab_size = len(vocab)
 vocab_size = tokenizer.get_vocab_size()
 embedding_dim = 300
 
-# glove embedding
-
-# # create embedding matrix
-# embedding_matrix = np.zeros((vocab_size, embedding_dim))
-# for word, i in vocab.items(): 
-#     embedding_vector = embedding_index.get(word)
-#     if embedding_vector is not None: 
-#         embedding_matrix[i] = embedding_vector
-
-# # create the embedding layer
-# embedding_layer = Embedding(
-#     input_dim=vocab_size,
-#     output_dim=embedding_dim,
-#     weights=[embedding_matrix],
-#     input_length=MAX_LEN,
-#     trainable=False  # Set to True if you want to fine-tune
-# )
-
 # Build mode, 128 neurons, used softmax activation for multi-class activation where exactly one class is correct
 # Dropout 30% --> helps robustness
 model = Sequential([
+    # manual embedding with random initialisation
     Embedding(input_dim=vocab_size, output_dim=embedding_dim, input_length=MAX_LEN),
-    # embedding_layer,
+
+    # single layer bidirectional LSTM: 128 nodes
     Bidirectional(LSTM(128, return_sequences=False)),
+
+    # triple layer bidirectional LSTM: 128, 256, 128 nodes in layers 1, 2 and 3 respectively
+    # 30% dropout at each layer for robust testing
+
     # Bidirectional(LSTM(128, return_sequences=True)),
     # Dropout(0.3),
     # Bidirectional(LSTM(256, return_sequences=True)),

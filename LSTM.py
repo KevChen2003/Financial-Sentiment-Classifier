@@ -23,10 +23,12 @@ from nltk.corpus import stopwords
 path = './FinancialPhraseBank-v1.0/Sentences_50Agree.txt'
 
 # file doesn't use UTF-8 encoding, but rather Latin-1 (ISO-8869-1)
+# pre-processing data into sentence and label
 with open(path, 'r', encoding='ISO-8859-1') as file:
     data = []
     for line in file:
         if '@' in line:
+            # split data into financial sentence and the label
             text, label = line.rsplit('@', 1)
             data.append((text.strip(), label.strip()))
             
@@ -100,7 +102,7 @@ y = np.array(df['label'])
 # Train/test split of 80/20 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# load glove vectors into a dictionary
+# load GloVe vectors into a dictionary
 embedding_index = {}
 with open("glove.42B.300d.txt", encoding="utf8") as f: 
     for line in f:
@@ -113,14 +115,14 @@ with open("glove.42B.300d.txt", encoding="utf8") as f:
 vocab_size = len(vocab)
 embedding_dim = 300
 
-# create embedding matrix
+# create embedding matrix, for GloVe embedding
 embedding_matrix = np.zeros((vocab_size, embedding_dim))
 for word, i in vocab.items(): 
     embedding_vector = embedding_index.get(word)
     if embedding_vector is not None: 
         embedding_matrix[i] = embedding_vector
 
-# create the embedding layer
+# create the GloVe embedding layer
 embedding_layer = Embedding(
     input_dim=vocab_size,
     output_dim=embedding_dim,
@@ -134,15 +136,25 @@ np.savetxt("initial_embedding_matrix.txt", embedding_matrix)
 # Build mode, 128 neurons, used softmax activation for multi-class activation where exactly one class is correct
 # Dropout 30% --> helps robustness, helps model not rely on too many significant words, but rather adapt with what its given
 model = Sequential([
+    # setting manual embedding layer, without GloVe embedding and with random initialisation (default)
     # Embedding(input_dim=vocab_size, output_dim=embedding_dim, input_length=MAX_LEN),
+
+    # setting pretrained GloVe embedding 
     embedding_layer,
+
+    # single bidirectional LSTM layer, 128 nodes
     Bidirectional(LSTM(128, return_sequences=False)),
+
+    # triple layer bidirectional LSTM: 128, 256, 128 nodes in layers 1, 2 and 3 respectively
+    # 30% dropout at each layer for robust testing
     # Bidirectional(LSTM(128, return_sequences=True)),
     # Dropout(0.3),
     # Bidirectional(LSTM(256, return_sequences=True)),
     # Dropout(0.3),
     # Bidirectional(LSTM(128)),
     # Dropout(0.3),
+
+    # softmax activation
     Dense(3, activation='softmax')  # 3 sentiment classes
 ])
 
