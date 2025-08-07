@@ -2,6 +2,8 @@
 
 This project involves building a LSTM (Long Short Term Memory) RNN (Recurrent Neural Network) that analyses financial texts and classifies the sentiment into three classes (positive, neutral, negative). I've attempted to analyse how different hyperparameters, embedding methods and design architectures affect the overall accuracy. 
 
+The model will print out classification reports afterwards and the confusion matrices to analyse the model's accuracy as well as classification behaviours, and we used the macro-avg f1 score as the main scoring metric to judge between this LSTM model as well as other Machine Learning and transformer-based language models like FinBERT. 
+
 Below are the different hyperparameters and embedding methods that I have implemented and compared. 
 
 LSTM (Long Short Term Memory): 
