@@ -15,4 +15,4 @@ LSTM (Long Short Term Memory):
 * LSTM_BPE:
     * Tried with Byte Pair Encoding instead of GloVe embedding
 
-Dataset obtained from: https://huggingface.co/datasets/takala/financial_phrasebank
+Dataset can be found [here](https://huggingface.co/datasets/takala/financial_phrasebank)
